@@ -1,0 +1,481 @@
+2025-06-20 10:07:08,133 - CRITICAL - Startup failed: Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 4, in <module>
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+
+2025-06-20 10:07:08,133 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 4, in <module>
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-06-20 10:07:28,280 - CRITICAL - Startup failed: Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 4, in <module>
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+
+2025-06-20 10:07:28,281 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 4, in <module>
+    import psutil
+ModuleNotFoundError: No module named 'psutil'
+2025-06-20 10:08:35,602 - CRITICAL - Startup failed: Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 47, in <module>
+    window = AnnotatorMainWindow()
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 28, in __init__
+    self._setup_ui()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 43, in _setup_ui
+    self.canvas = AnnotationCanvas(self)
+                  ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 59, in __init__
+    self.memory_timer = QTimer(self)
+                        ^^^^^^
+NameError: name 'QTimer' is not defined
+
+2025-06-20 10:08:35,603 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 47, in <module>
+    window = AnnotatorMainWindow()
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 28, in __init__
+    self._setup_ui()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 43, in _setup_ui
+    self.canvas = AnnotationCanvas(self)
+                  ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 59, in __init__
+    self.memory_timer = QTimer(self)
+                        ^^^^^^
+NameError: name 'QTimer' is not defined
+2025-06-20 10:11:09,259 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 328, in _add_image
+    QApplication.setOverrideCursor(Qt.WaitCursor)
+    ^^^^^^^^^^^^
+NameError: name 'QApplication' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 346, in _add_image
+    logging.error(f"Image load failed: {traceback.format_exc()}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 348, in _add_image
+    QApplication.restoreOverrideCursor()
+    ^^^^^^^^^^^^
+NameError: name 'QApplication' is not defined
+2025-06-20 10:11:37,609 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 71, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-20 10:16:07,639 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 334, in _add_image
+    if not self.canvas.add_image(file):
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnnotationCanvas' object has no attribute 'add_image'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 347, in _add_image
+    logging.error(f"Image load failed: {traceback.format_exc()}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+2025-06-20 10:51:01,300 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 71, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-20 11:52:02,137 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 335, in _add_image
+    raise ValueError("Failed to add image")
+ValueError: Failed to add image
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 347, in _add_image
+    logging.error(f"Image load failed: {traceback.format_exc()}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+2025-06-20 12:06:14,633 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 335, in _add_image
+    raise ValueError("Failed to add image")
+ValueError: Failed to add image
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 347, in _add_image
+    logging.error(f"Image load failed: {traceback.format_exc()}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+2025-06-20 21:24:16,014 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 335, in _add_image
+    raise ValueError("Failed to add image")
+ValueError: Failed to add image
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 347, in _add_image
+    logging.error(f"Image load failed: {traceback.format_exc()}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+2025-06-20 21:27:07,950 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 70, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-20 21:48:56,816 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:49:03,927 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:49:05,612 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:49:08,158 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:49:10,189 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:50:11,558 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:50:13,223 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:50:15,202 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:50:16,747 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:50:19,035 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 373, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 308, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:14,306 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 388, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:20,421 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 388, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:22,221 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 388, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:23,767 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 388, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:25,429 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 359, in mousePressEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-20 21:53:25,668 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 388, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 323, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:26:44,773 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:26:47,392 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:26:49,891 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:26:54,934 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:27:28,884 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:27:32,948 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:27:34,292 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 392, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 327, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:33:25,334 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 396, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 331, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 00:33:36,482 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 396, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 331, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 12:15:39,453 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 398, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 333, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 12:15:56,915 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 398, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 333, in _get_image_coords
+    if not self.original_image:
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 12:20:14,528 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 81, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-21 12:38:03,580 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 81, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-21 12:48:51,790 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 402, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+          ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnnotationCanvas' object has no attribute '_get_image_coords'
+2025-06-21 12:48:58,393 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 402, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+          ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnnotationCanvas' object has no attribute '_get_image_coords'
+2025-06-21 12:50:06,109 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 93, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-21 14:06:46,059 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 437, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 374, in _get_image_coords
+    if not self.original_image or not self.pixmap():
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 14:06:48,971 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 437, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 374, in _get_image_coords
+    if not self.original_image or not self.pixmap():
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-21 14:06:50,907 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 437, in mouseMoveEvent
+    pos = self._get_image_coords(event.pos())
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 374, in _get_image_coords
+    if not self.original_image or not self.pixmap():
+           ^^^^^^^^^^^^^^^^^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2025-06-26 03:44:06,276 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 93, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-26 03:47:27,677 - CRITICAL - Startup failed: Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 18, in <module>
+    from annotation_canvas import AnnotationCanvas
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 20, in <module>
+    from annotation_io import save_annotation_file, AnnotationFormat, _generate_color_for_class
+ImportError: cannot import name '_generate_color_for_class' from 'annotation_io' (C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_io.py)
+
+2025-06-26 03:47:27,677 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 18, in <module>
+    from annotation_canvas import AnnotationCanvas
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 20, in <module>
+    from annotation_io import save_annotation_file, AnnotationFormat, _generate_color_for_class
+ImportError: cannot import name '_generate_color_for_class' from 'annotation_io' (C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_io.py)
+2025-06-26 03:54:09,650 - CRITICAL - Startup failed: Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 19, in <module>
+    from annotation_canvas import AnnotationCanvas
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 20, in <module>
+    from annotation_io import save_annotation_file, AnnotationFormat, _generate_color_for_class
+ImportError: cannot import name '_generate_color_for_class' from 'annotation_io' (C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_io.py)
+
+2025-06-26 03:54:09,650 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\main.py", line 45, in <module>
+    from ui_mainwindow import AnnotatorMainWindow
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\ui_mainwindow.py", line 19, in <module>
+    from annotation_canvas import AnnotationCanvas
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 20, in <module>
+    from annotation_io import save_annotation_file, AnnotationFormat, _generate_color_for_class
+ImportError: cannot import name '_generate_color_for_class' from 'annotation_io' (C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_io.py)
+2025-06-26 04:07:19,683 - ERROR - Failed to save annotations for C:/Users/entsg/Desktop/test\bb.jpg: save_annotation_file() got an unexpected keyword argument 'class_colors'
+2025-06-26 04:16:00,051 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 93, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-26 09:22:55,249 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 93, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
+2025-06-26 09:27:18,073 - ERROR - Failed to save annotations for C:/Users/entsg/Desktop/test/bb.jpg: save_annotation_file() takes from 5 to 6 positional arguments but 7 were given
+2025-06-26 09:48:29,468 - CRITICAL - Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\entsg\PycharmProjects\annotation_gui\deepseekrework\annotation_canvas.py", line 93, in check_memory
+    def check_memory(self):
+    
+KeyboardInterrupt
