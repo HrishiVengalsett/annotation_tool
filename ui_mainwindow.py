@@ -7,8 +7,8 @@ import traceback
 import logging
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QPushButton, QListWidget,
-    QLabel, QScrollArea, QFileDialog, QFrame, QSplitter,
+    QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QListWidget,
+    QLabel, QScrollArea, QFileDialog, QFrame, QSplitter, QGroupBox,
     QLineEdit, QComboBox, QStatusBar, QShortcut, QMenu,
     QColorDialog, QMessageBox
 )
@@ -28,112 +28,117 @@ class AnnotatorMainWindow(QMainWindow):
         self.setWindowTitle("Image Annotation Tool")
         self.setMinimumSize(1200, 700)
 
-        # Initialize UI components
+        self.annotation_format = AnnotationFormat.YOLO
+        self.annotation_folder = ""
+        self.coco_data = None
+        self.min_memory_mb = 500
+
         self._setup_ui()
         self._setup_shortcuts()
 
-        # State variables
-        self.annotation_format = AnnotationFormat.YOLO
-        self.annotation_folder = ""
-        self.coco_data = None  # For COCO format tracking
-        self.min_memory_mb = 500
-
     def _setup_ui(self):
-        """Initialize all UI components."""
-        # Apply stylesheet
         self.setStyleSheet(self._get_stylesheet())
-
-        # Create main canvas
         self.canvas = AnnotationCanvas(self)
-
-        # Main splitter
         splitter = QSplitter(Qt.Horizontal)
         self.setCentralWidget(splitter)
 
-        # Left Panel (Class Bin + Tools)
         left_frame = QFrame()
         left_frame.setMinimumWidth(250)
         left_layout = QVBoxLayout()
-        left_layout.setSpacing(10)
+        left_layout.setSpacing(15)
         left_layout.setContentsMargins(5, 5, 5, 5)
 
-        # Class Bin Section
-        left_layout.addWidget(QLabel("Class Bin", self))
+        # Class Management Section
+        class_group = QGroupBox("Class Management")
+        class_layout = QVBoxLayout()
+        class_layout.setSpacing(5)
+
         self.class_list_widget = QListWidget(self)
         self.class_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.class_list_widget.customContextMenuRequested.connect(self._show_class_context_menu)
         self.class_list_widget.itemClicked.connect(self._select_class_from_bin)
-        left_layout.addWidget(self.class_list_widget)
+        class_layout.addWidget(self.class_list_widget)
 
-        # Class Input
-        class_input_layout = QVBoxLayout()
+        class_input_layout = QHBoxLayout()
         self.class_input = QLineEdit(self)
-        self.class_input.setPlaceholderText("Add new class")
+        self.class_input.setPlaceholderText("New class name")
         self.class_input.returnPressed.connect(self._add_class_to_bin)
         class_input_layout.addWidget(self.class_input)
 
-        add_class_btn = QPushButton("Add Class", self)
+        add_class_btn = QPushButton("Add", self)
         add_class_btn.clicked.connect(self._add_class_to_bin)
         class_input_layout.addWidget(add_class_btn)
-        left_layout.addLayout(class_input_layout)
+        class_layout.addLayout(class_input_layout)
 
-        # Tools Section
-        left_layout.addWidget(QLabel("Tools", self))
+        class_group.setLayout(class_layout)
+        left_layout.addWidget(class_group)
 
-        # Annotation Format
-        self.format_combo = QComboBox(self)
-        self.format_combo.addItems([fmt.name for fmt in AnnotationFormat])
-        self.format_combo.currentIndexChanged.connect(self._select_annotation_format)
-        left_layout.addWidget(self.format_combo)
+        # Image Navigation Section
+        nav_group = QGroupBox("Image Navigation")
+        nav_layout = QGridLayout()
+        nav_layout.setSpacing(5)
 
-        # Navigation Buttons
-        nav_btn_layout = QVBoxLayout()
-        prev_btn = QPushButton("Previous Image (←)", self)
+        prev_btn = QPushButton("Previous (←)", self)
         prev_btn.clicked.connect(self.canvas.prev_image)
-        next_btn = QPushButton("Next Image (→)", self)
+        nav_layout.addWidget(prev_btn, 0, 0)
+
+        next_btn = QPushButton("Next (→)", self)
         next_btn.clicked.connect(self.canvas.next_image)
-        nav_btn_layout.addWidget(prev_btn)
-        nav_btn_layout.addWidget(next_btn)
-        left_layout.addLayout(nav_btn_layout)
+        nav_layout.addWidget(next_btn, 0, 1)
 
-        # Editing Tools
-        undo_btn = QPushButton("Undo (Ctrl+Z)", self)
-        undo_btn.clicked.connect(self.canvas.undo)
-        redo_btn = QPushButton("Redo (Ctrl+Y)", self)
-        redo_btn.clicked.connect(self.canvas.redo)
-        left_layout.addWidget(undo_btn)
-        left_layout.addWidget(redo_btn)
-
-        # Zoom Controls
         zoom_in_btn = QPushButton("Zoom In (+)", self)
         zoom_in_btn.clicked.connect(lambda: self.canvas.zoom_image(1.25))
+        nav_layout.addWidget(zoom_in_btn, 1, 0)
+
         zoom_out_btn = QPushButton("Zoom Out (-)", self)
         zoom_out_btn.clicked.connect(lambda: self.canvas.zoom_image(0.8))
-        fit_btn = QPushButton("Fit to View (F)", self)
-        fit_btn.clicked.connect(self.canvas.fit_to_screen)
-        left_layout.addWidget(zoom_in_btn)
-        left_layout.addWidget(zoom_out_btn)
-        left_layout.addWidget(fit_btn)
+        nav_layout.addWidget(zoom_out_btn, 1, 1)
 
-        # Folder Operations
+        undo_btn = QPushButton("Undo (Ctrl+Z)", self)
+        undo_btn.clicked.connect(self.canvas.undo)
+        nav_layout.addWidget(undo_btn, 2, 0)
+
+        redo_btn = QPushButton("Redo (Ctrl+Y)", self)
+        redo_btn.clicked.connect(self.canvas.redo)
+        nav_layout.addWidget(redo_btn, 2, 1)
+
+        delete_box_btn = QPushButton("Delete Box (Del)", self)
+        delete_box_btn.clicked.connect(self._delete_selected_box)
+        nav_layout.addWidget(delete_box_btn, 3, 0, 1, 2)
+
+        nav_group.setLayout(nav_layout)
+        left_layout.addWidget(nav_group)
+
+        # File Operations Section
+        file_group = QGroupBox("File Operations")
+        file_layout = QVBoxLayout()
+        file_layout.setSpacing(5)
+
+        self.format_combo = QComboBox(self)
+        self.format_combo.addItems([f.name for f in AnnotationFormat])
+        self.format_combo.currentIndexChanged.connect(self._select_annotation_format)
+        file_layout.addWidget(self.format_combo)
+
         select_folder_btn = QPushButton("Select Image Folder", self)
         select_folder_btn.clicked.connect(self._load_folder)
-        left_layout.addWidget(select_folder_btn)
+        file_layout.addWidget(select_folder_btn)
 
         save_btn = QPushButton("Save Annotations (Ctrl+S)", self)
         save_btn.clicked.connect(self.canvas.save_annotations)
-        left_layout.addWidget(save_btn)
+        file_layout.addWidget(save_btn)
 
+        file_group.setLayout(file_layout)
+        left_layout.addWidget(file_group)
+
+        left_layout.addStretch()
         left_frame.setLayout(left_layout)
         splitter.addWidget(left_frame)
 
-        # Center Panel (Canvas)
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(self.canvas)
         splitter.addWidget(scroll_area)
 
-        # Right Panel (Image List)
         right_frame = QFrame()
         right_frame.setMinimumWidth(200)
         right_layout = QVBoxLayout()
@@ -152,19 +157,14 @@ class AnnotatorMainWindow(QMainWindow):
         right_frame.setLayout(right_layout)
         splitter.addWidget(right_frame)
 
-        # Set initial splitter sizes
         splitter.setSizes([250, 800, 200])
-
-        # Add menu bar
         self._setup_menubar()
-
-        # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self._update_status("Ready")
 
     def _setup_menubar(self):
-        """Initialize the main menu bar"""
+        """Initialize the main menu bar."""
         menubar = self.menuBar()
 
         # File menu
@@ -205,6 +205,17 @@ class AnnotatorMainWindow(QMainWindow):
             background-color: white;
             border-radius: 5px;
             padding: 5px;
+        }
+        QGroupBox {
+            border: 1px solid #c0c0c0;
+            border-radius: 4px;
+            margin-top: 10px;
+            padding-top: 15px;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 10px;
+            padding: 0 3px;
         }
         QPushButton {
             background-color: #e0e0e0;
