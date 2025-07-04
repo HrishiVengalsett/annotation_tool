@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QListWidget,
     QLabel, QScrollArea, QFileDialog, QFrame, QSplitter, QGroupBox,
     QLineEdit, QComboBox, QStatusBar, QShortcut, QMenu,
-    QColorDialog, QMessageBox, QDialog, QSpinBox, QDialogButtonBox, QWidget, QCheckBox
+    QColorDialog, QMessageBox, QDialog, QSpinBox, QDialogButtonBox, QWidget, QCheckBox, QProgressDialog
 )
 from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtCore import QTimer
@@ -67,7 +67,7 @@ class AugmentationPreviewDialog(QDialog):
 
         # Create checkbox
         checkbox = QCheckBox(name)
-        checkbox.setChecked(True)
+        checkbox.setChecked(False)
 
         # Convert image to QPixmap
         h, w, ch = img.shape
@@ -97,6 +97,11 @@ class AugmentationPreviewDialog(QDialog):
 
         # Store the image data with the checkbox
         frame.img_data = (name, img, boxes)
+
+        # PRE-ADD to selected_items since it is checked by default
+        self.selected_items.append(frame.img_data)
+
+        # Track toggle changes
         checkbox.toggled.connect(lambda state, f=frame: self._toggle_selection(f, state))
 
         # Add to grid layout
@@ -107,11 +112,11 @@ class AugmentationPreviewDialog(QDialog):
             self.row += 1
 
     def _toggle_selection(self, frame, state):
-        """Add/remove image from selected items based on checkbox"""
-        if state:
-            self.selected_items.append(frame.img_data)
-        else:
-            self.selected_items.remove(frame.img_data)
+        data = frame.img_data
+        if state and data not in self.selected_items:
+            self.selected_items.append(data)
+        elif not state and data in self.selected_items:
+            self.selected_items.remove(data)
 
     def get_selected_items(self):
         """Return list of (name, image, boxes) tuples"""
@@ -369,84 +374,127 @@ class AnnotatorMainWindow(QMainWindow):
 
     def _save_augmentations(self, selected_items):
         """Save augmentations to unified folder structure"""
+        progress = None
         try:
             # 1. Create base folder
-            base_dir = os.path.join(os.path.dirname(self.canvas.image_paths[0]), "augmented_images")
-            os.makedirs(base_dir, exist_ok=True)
+            base_dir = os.path.normpath(os.path.join(
+                os.path.dirname(self.canvas.image_paths[0]),
+                "augmented_images"
+            ))
 
-            # 2. Create subfolders
+            # 2. Create folder structure
             folders = {
-                'images': os.path.join(base_dir, "images/train"),
+                'images': os.path.normpath(os.path.join(base_dir, "images/train")),
                 'annotations': {
-                    'yolo': os.path.join(base_dir, "annotations/yolo"),
-                    'coco': os.path.join(base_dir, "annotations/coco"),
-                    'custom': os.path.join(base_dir, "annotations/custom_txt")
+                    'yolo': os.path.normpath(os.path.join(base_dir, "annotations/yolo")),
+                    'coco': os.path.normpath(os.path.join(base_dir, "annotations/coco")),
+                    'custom': os.path.normpath(os.path.join(base_dir, "annotations/custom_txt"))
                 },
-                'visual': os.path.join(base_dir, "visual_annotations")
+                'visual': os.path.normpath(os.path.join(base_dir, "visual_annotations"))
             }
 
-            # Create all directories
+            # Create directories with verification
             for folder in [folders['images'], *folders['annotations'].values(), folders['visual']]:
                 os.makedirs(folder, exist_ok=True)
+                if not os.path.exists(folder):
+                    raise IOError(f"Failed to create directory: {folder}")
+                if not os.access(folder, os.W_OK):
+                    raise PermissionError(f"No write permissions for: {folder}")
 
-            # 3. Save each augmentation
+            # Define annotation formats
+            annotation_formats = {
+                'yolo': AnnotationFormat.YOLO,
+                'coco': AnnotationFormat.COCO,
+                'custom': AnnotationFormat.CUSTOM_TXT
+            }
+
+            # 3. Process augmentations
             success_count = 0
-            for name, img, boxes in selected_items:
+            progress = QProgressDialog("Saving augmentations...", "Cancel", 0, len(selected_items), self)
+            progress.setWindowModality(Qt.WindowModal)
+
+            for i, (name, img, boxes) in enumerate(selected_items):
+                progress.setValue(i)
+                if progress.wasCanceled():
+                    break
+
                 try:
+                    # Validate input
+                    if img is None or img.size == 0:
+                        raise ValueError("Invalid image data")
+
                     # Save image
-                    img_name = f"{name}.jpg"
-                    img_path = os.path.join(folders['images'], img_name)
-                    if not cv2.imwrite(img_path, img):
-                        raise IOError(f"Failed to write {img_path}")
+                    img_path = os.path.join(folders['images'], f"{name}.jpg")
+                    if not cv2.imwrite(img_path, img, [int(cv2.IMWRITE_JPEG_QUALITY), 95]):
+                        raise IOError(f"Failed to write image")
 
-                    # Save annotations
-                    img_shape = img.shape
+                    # Save visual annotation
+                    if not save_visual_annotation_image(img_path, boxes, folders['visual'], self.canvas.class_colors):
+                        raise IOError("Visual annotation failed")
+
+                    # Save annotation formats
                     for fmt, path in folders['annotations'].items():
-                        save_annotation_file(
-                            img_path,
-                            boxes,
-                            AnnotationFormat[fmt.upper()],
-                            path,
-                            img_shape
-                        )
-
-                    # Save visual
-                    save_visual_annotation_image(
-                        img_path,
-                        boxes,
-                        folders['visual'],
-                        self.canvas.class_colors
-                    )
+                        try:
+                            save_annotation_file(
+                                img_path,
+                                boxes,
+                                annotation_formats[fmt],
+                                path,
+                                img.shape
+                            )
+                        except Exception as e:
+                            logging.error(f"{fmt} format failed: {str(e)}")
 
                     success_count += 1
+
+                    # Periodic cleanup
+                    if i % 10 == 0:
+                        import gc
+                        gc.collect()
+                        QApplication.processEvents()
+
                 except Exception as e:
-                    logging.error(f"Failed to save {name}: {str(e)}")
+                    logging.error(f"Failed {name}: {str(e)}")
                     continue
 
-            # 4. Verify output
-            if success_count > 0:
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"Saved {success_count} augmentations to:\n{base_dir}"
-                )
-                # Open folder in file explorer
-                if sys.platform == "win32":
-                    os.startfile(base_dir)
-                elif sys.platform == "darwin":
-                    subprocess.run(["open", base_dir])
-                else:
-                    subprocess.run(["xdg-open", base_dir])
-            else:
-                QMessageBox.warning(self, "Error", "No augmentations were saved")
+            # 4. Show results
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Augmentation Complete")
+            msg.setText(f"Completed: {success_count}/{len(selected_items)}")
+
+            # Add log details
+            log_content = "No log content available"
+            try:
+                log_file_path = logging.getLogger().handlers[0].baseFilename
+                if os.path.exists(log_file_path):
+                    with open(log_file_path, 'r', encoding='utf-8') as f:
+                        log_content = f.read()
+            except Exception as log_error:
+                log_content = f"Error reading log: {str(log_error)}"
+
+            msg.setDetailedText(log_content)
+            msg.exec_()
 
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Critical Error",
-                f"Could not create output structure:\n{str(e)}"
+                "Error",
+                f"Augmentation failed:\n{str(e)}"
             )
-            logging.critical(f"Augmentation save failed: {traceback.format_exc()}")
+            logging.critical(f"Augmentation error: {traceback.format_exc()}")
+        finally:
+            if progress:
+                progress.close()
+
+    def _open_folder(self, path):
+        """Open folder in system file explorer"""
+        if sys.platform == "win32":
+            os.startfile(path)
+        elif sys.platform == "darwin":
+            subprocess.run(["open", path])
+        else:
+            subprocess.run(["xdg-open", path])
 
     def _setup_shortcuts(self):
         """Set up keyboard shortcuts."""
