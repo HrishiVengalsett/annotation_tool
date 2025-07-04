@@ -34,9 +34,12 @@ class ImageAugmenter:
         }
 
     def augment_image(self, img, boxes, n=5):
-        """Generate n augmented versions of an image with valid bounding boxes"""
+        """Generate exactly n augmented versions of an image with valid bounding boxes"""
         results = []
-        for i in range(n):
+        max_attempts = n * 5  # Prevent infinite loops in edge cases
+        attempts = 0
+
+        while len(results) < n and attempts < max_attempts:
             img_copy = img.copy()
             boxes_copy = [list(box) for box in boxes]  # Convert to mutable lists
 
@@ -52,13 +55,14 @@ class ImageAugmenter:
                 p1, p2, class_name = box
                 if (0 <= p1.x() < w and 0 <= p1.y() < h and
                         0 <= p2.x() < w and 0 <= p2.y() < h and
-                        abs(p1.x() - p2.x()) >= 5 and abs(p1.y() - p2.y()) >= 5):  # Minimum 5px size
-                    valid_boxes.append((QPoint(p1.x(), p1.y()),
-                                        QPoint(p2.x(), p2.y()),
-                                        class_name))
+                        abs(p1.x() - p2.x()) >= 5 and abs(p1.y() - p2.y()) >= 5):
+                    valid_boxes.append((QPoint(p1.x(), p1.y()), QPoint(p2.x(), p2.y()), class_name))
 
             if valid_boxes:
                 results.append((img_copy, valid_boxes))
+
+            attempts += 1
+
         return results
 
     def _apply_horizontal_flip(self, img, boxes):
@@ -407,63 +411,123 @@ def save_visual_annotation_image(
         output_folder: str,
         class_colors: Dict[str, Tuple[int, int, int]] = None
 ) -> bool:
+    """
+    Save an annotated version of the image with bounding boxes drawn.
+    Returns True if successful, False otherwise.
+    """
     try:
-        # Create output filename (ensure .jpg extension)
+        # 1. Verify input parameters
+        if not os.path.exists(img_path):
+            logging.error(f"Image file not found: {img_path}")
+            return False
+
+        if not boxes:
+            logging.warning(f"No boxes to draw for {img_path}")
+            return False  # Or return True if empty boxes is acceptable
+
+        # 2. Prepare output path
         base_name = os.path.splitext(os.path.basename(img_path))[0]
         output_filename = f"{base_name}_annotated.jpg"
         output_path = os.path.join(output_folder, output_filename)
 
-        # Remove existing visual annotation if present
-        if os.path.exists(output_path):
-            try:
-                os.remove(output_path)
-            except OSError as e:
-                logging.warning(f"Could not remove old visual annotation: {e}")
+        logging.debug(f"Preparing to save annotated image to: {output_path}")
 
-        # Load the original image
-        img = cv2.imread(img_path)
-        if img is None:
-            logging.error(f"Failed to read image for visual annotation: {img_path}")
+        # 3. Verify output directory exists and is writable
+        os.makedirs(output_folder, exist_ok=True)
+        if not os.access(output_folder, os.W_OK):
+            logging.error(f"Output directory not writable: {output_folder}")
             return False
 
-        # Dynamic thickness based on image size
-        thickness = max(1, int(0.002 * max(img.shape[:2])))
+        # 4. Load the original image with verification
+        img = cv2.imread(img_path)
+        if img is None:
+            logging.error(f"Failed to read image (cv2.imread returned None): {img_path}")
+            return False
 
-        # Draw each box on the image
-        for box in boxes:
-            p1, p2, class_name = box
-            x1, y1 = p1.x(), p1.y()
-            x2, y2 = p2.x(), p2.y()
+        h, w = img.shape[:2]
+        logging.debug(f"Image loaded: {w}x{h} - {img_path}")
 
-            # Get color for this class (or default red)
-            color = class_colors.get(class_name, (0, 0, 255)) if class_colors else (0, 0, 255)
+        # 5. Draw each box with verification
+        thickness = max(1, int(0.002 * max(h, w)))
+        logging.debug(f"Using line thickness: {thickness}px")
 
-            # Draw rectangle
-            cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness)
+        for i, box in enumerate(boxes):
+            try:
+                if len(box) != 3:
+                    raise ValueError(f"Box {i} has {len(box)} elements (expected 3)")
 
-            # Draw label background
-            label = f"{class_name}"
-            font_scale = 0.6
-            text_thickness = 1
-            (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_thickness)
-            cv2.rectangle(img, (x1, y1 - text_height - 4), (x1 + text_width, y1), color, -1)
+                p1, p2, class_name = box
 
-            # Draw label text
-            cv2.putText(img, label, (x1, y1 - 4),
-                        cv2.FONT_HERSHEY_SIMPLEX, font_scale,
-                        (255, 255, 255), text_thickness, cv2.LINE_AA)
+                # Convert QPoint to coordinates
+                x1, y1 = p1.x(), p1.y()
+                x2, y2 = p2.x(), p2.y()
 
-        # Ensure output directory exists
-        os.makedirs(output_folder, exist_ok=True)
+                # Verify coordinates are within image bounds
+                if not (0 <= x1 < w and 0 <= x2 <= w and 0 <= y1 < h and 0 <= y2 <= h):
+                    logging.warning(f"Box {i} coordinates out of bounds: ({x1},{y1})-({x2},{y2})")
+                    continue
 
-        # Save with quality=95 to prevent recompression artifacts
+                if abs(x1 - x2) < 5 or abs(y1 - y2) < 5:
+                    logging.warning(f"Box {i} is too small: ({x1},{y1})-({x2},{y2})")
+                    continue
+
+                # Get color (default to red if not specified)
+                color = class_colors.get(class_name, (0, 0, 255)) if class_colors else (0, 0, 255)
+                logging.debug(f"Drawing box {i}: {class_name} at ({x1},{y1})-({x2},{y2}) in {color}")
+
+                # Draw rectangle
+                cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness)
+
+                # Draw label
+                label = f"{class_name}"
+                font_scale = 0.6
+                text_thickness = 1
+                (text_width, text_height), _ = cv2.getTextSize(
+                    label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_thickness)
+
+                # Label background
+                cv2.rectangle(
+                    img,
+                    (x1, y1 - text_height - 4),
+                    (x1 + text_width, y1),
+                    color, -1)
+
+                # Label text
+                cv2.putText(
+                    img, label, (x1, y1 - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                    (255, 255, 255), text_thickness, cv2.LINE_AA)
+
+            except Exception as box_error:
+                logging.error(f"Error drawing box {i}: {str(box_error)}")
+                continue
+
+        # 6. Save the image with verification
+        logging.debug(f"Attempting to save to: {output_path}")
         success = cv2.imwrite(output_path, img, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+
         if not success:
-            raise IOError(f"Failed to write image to {output_path}")
+            raise IOError(f"cv2.imwrite returned False - save failed")
+
+        if not os.path.exists(output_path):
+            raise IOError(f"File not created after cv2.imwrite: {output_path}")
+
+        file_size = os.path.getsize(output_path)
+        if file_size == 0:
+            os.remove(output_path)
+            raise IOError(f"Empty file created: {output_path}")
+
+        logging.info(f"Successfully saved annotated image: {output_path} ({file_size} bytes)")
         return True
 
     except Exception as e:
         logging.error(f"Failed to save visual annotation for {img_path}: {str(e)}")
+        if 'output_path' in locals() and os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+                logging.debug(f"Removed incomplete output file: {output_path}")
+            except:
+                pass
         return False
 
 
