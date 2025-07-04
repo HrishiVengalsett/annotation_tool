@@ -1,7 +1,11 @@
 import json
 import os
+import subprocess
+import sys
 from enum import Enum
 from typing import Optional, Dict, Tuple
+
+import cv2
 import psutil
 import traceback
 import logging
@@ -10,16 +14,108 @@ from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QListWidget,
     QLabel, QScrollArea, QFileDialog, QFrame, QSplitter, QGroupBox,
     QLineEdit, QComboBox, QStatusBar, QShortcut, QMenu,
-    QColorDialog, QMessageBox
+    QColorDialog, QMessageBox, QDialog, QSpinBox, QDialogButtonBox, QWidget, QCheckBox
 )
 from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QKeySequence, QIcon, QColor
+from PyQt5.QtGui import QKeySequence, QIcon, QColor, QImage, QPixmap
 from PyQt5.QtWidgets import QApplication
 
 from annotation_canvas import AnnotationCanvas
-from annotation_io import AnnotationFormat
+from annotation_io import AnnotationFormat, DatasetExporter, ImageAugmenter, save_annotation_file, \
+    save_visual_annotation_image
 from image_loader import load_image_folder, add_image_to_list
+
+
+class AugmentationPreviewDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Augmentations to Keep")
+        self.setMinimumSize(800, 600)
+        self.selected_items = []
+
+        # Main layout
+        self.layout = QVBoxLayout()
+
+        # Scroll area for images
+        self.scroll_area = QScrollArea()
+        self.scroll_content = QWidget()
+        self.scroll_layout = QGridLayout()
+        self.scroll_content.setLayout(self.scroll_layout)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.scroll_area.setWidgetResizable(True)
+        self.layout.addWidget(self.scroll_area)
+
+        # Buttons
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.layout.addWidget(self.buttons)
+
+        self.setLayout(self.layout)
+        self.row = 0
+        self.col = 0
+
+    def add_image(self, name, img, boxes, class_colors):
+        """Add an augmented image preview to the dialog"""
+        frame = QFrame()
+        frame.setFrameShape(QFrame.StyledPanel)
+        layout = QVBoxLayout()
+
+        # Create checkbox
+        checkbox = QCheckBox(name)
+        checkbox.setChecked(True)
+
+        # Convert image to QPixmap
+        h, w, ch = img.shape
+        bytes_per_line = ch * w
+        q_img = QImage(img.data, w, h, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+        pixmap = QPixmap.fromImage(q_img)
+
+        # Create thumbnail label
+        label = QLabel()
+        label.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio))
+        label.setAlignment(Qt.AlignCenter)
+
+        # Draw boxes on a copy for visualization
+        vis_img = img.copy()
+        for box in boxes:
+            p1, p2, class_name = box
+            color = class_colors.get(class_name, (0, 0, 255))
+            cv2.rectangle(vis_img,
+                          (p1.x(), p1.y()),
+                          (p2.x(), p2.y()),
+                          color, 2)
+
+        # Add to layout
+        layout.addWidget(checkbox)
+        layout.addWidget(label)
+        frame.setLayout(layout)
+
+        # Store the image data with the checkbox
+        frame.img_data = (name, img, boxes)
+        checkbox.toggled.connect(lambda state, f=frame: self._toggle_selection(f, state))
+
+        # Add to grid layout
+        self.scroll_layout.addWidget(frame, self.row, self.col)
+        self.col += 1
+        if self.col > 2:  # 3 columns
+            self.col = 0
+            self.row += 1
+
+    def _toggle_selection(self, frame, state):
+        """Add/remove image from selected items based on checkbox"""
+        if state:
+            self.selected_items.append(frame.img_data)
+        else:
+            self.selected_items.remove(frame.img_data)
+
+    def get_selected_items(self):
+        """Return list of (name, image, boxes) tuples"""
+        return self.selected_items
 
 
 class AnnotatorMainWindow(QMainWindow):
@@ -114,6 +210,8 @@ class AnnotatorMainWindow(QMainWindow):
         file_layout = QVBoxLayout()
         file_layout.setSpacing(5)
 
+
+
         self.format_combo = QComboBox(self)
         self.format_combo.addItems([f.name for f in AnnotationFormat])
         self.format_combo.currentIndexChanged.connect(self._select_annotation_format)
@@ -126,6 +224,14 @@ class AnnotatorMainWindow(QMainWindow):
         save_btn = QPushButton("Save Annotations (Ctrl+S)", self)
         save_btn.clicked.connect(self.canvas.save_annotations)
         file_layout.addWidget(save_btn)
+
+        export_btn = QPushButton("Export Dataset", self)
+        export_btn.clicked.connect(self._export_dataset)
+        file_layout.addWidget(export_btn)
+
+        augment_btn = QPushButton("Create Augmentations", self)
+        augment_btn.clicked.connect(self._handle_augmentations)
+        file_layout.addWidget(augment_btn)
 
         file_group.setLayout(file_layout)
         left_layout.addWidget(file_group)
@@ -182,6 +288,165 @@ class AnnotatorMainWindow(QMainWindow):
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(self.close)
         exit_action.setShortcut("Ctrl+Q")
+
+    def _export_dataset(self):
+        """Handle the dataset export functionality"""
+        # Initialize exporter if it doesn't exist
+        if not hasattr(self, 'exporter'):
+            from annotation_io import DatasetExporter
+            self.exporter = DatasetExporter()
+
+        # Check if there are any annotations to export
+        if not hasattr(self.canvas, 'annotations') or not self.canvas.annotations:
+            QMessageBox.warning(self, "Error", "No annotations to export")
+            return
+
+        # Perform the export
+        success = self.exporter.export_dataset(self.canvas, self)
+
+        # Provide feedback
+        if success:
+            self._update_status("Dataset exported successfully")
+        else:
+            self._update_status("Dataset export failed")
+
+    def _handle_augmentations(self):
+        if not self.canvas.image_paths:
+            QMessageBox.warning(self, "Error", "No images loaded to augment")
+            return
+
+        dialog = AugmentationDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            n = dialog.get_augmentation_count()
+            self._generate_augmentations(n)
+
+    def _generate_augmentations(self, n_per_image):
+        """Generate augmented versions of all loaded images"""
+        try:
+            # Initialize augmenter
+            self.augmenter = ImageAugmenter()
+
+            # Create preview dialog
+            preview_dialog = AugmentationPreviewDialog(self)
+
+            # Process each image
+            for img_path in self.canvas.image_paths:
+                img = cv2.imread(img_path)
+                if img is None:
+                    continue
+
+                boxes = self.canvas.annotations.get(img_path, [])
+                if not boxes:
+                    continue
+
+                # Generate augmentations
+                augmented = self.augmenter.augment_image(img, boxes, n_per_image)
+
+                # Add to preview dialog
+                base_name = os.path.splitext(os.path.basename(img_path))[0]
+                for i, (aug_img, aug_boxes) in enumerate(augmented):
+                    preview_dialog.add_image(
+                        f"{base_name}_aug{i + 1}",
+                        aug_img,
+                        aug_boxes,
+                        self.canvas.class_colors
+                    )
+
+            # Show preview and get selection
+            if preview_dialog.exec_() == QDialog.Accepted:
+                selected = preview_dialog.get_selected_items()
+                if selected:
+                    self._save_augmentations(selected)
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Saved {len(selected)} augmented images"
+                    )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Augmentation failed: {str(e)}")
+            logging.error(f"Augmentation error: {traceback.format_exc()}")
+
+    def _save_augmentations(self, selected_items):
+        """Save augmentations to unified folder structure"""
+        try:
+            # 1. Create base folder
+            base_dir = os.path.join(os.path.dirname(self.canvas.image_paths[0]), "augmented_images")
+            os.makedirs(base_dir, exist_ok=True)
+
+            # 2. Create subfolders
+            folders = {
+                'images': os.path.join(base_dir, "images/train"),
+                'annotations': {
+                    'yolo': os.path.join(base_dir, "annotations/yolo"),
+                    'coco': os.path.join(base_dir, "annotations/coco"),
+                    'custom': os.path.join(base_dir, "annotations/custom_txt")
+                },
+                'visual': os.path.join(base_dir, "visual_annotations")
+            }
+
+            # Create all directories
+            for folder in [folders['images'], *folders['annotations'].values(), folders['visual']]:
+                os.makedirs(folder, exist_ok=True)
+
+            # 3. Save each augmentation
+            success_count = 0
+            for name, img, boxes in selected_items:
+                try:
+                    # Save image
+                    img_name = f"{name}.jpg"
+                    img_path = os.path.join(folders['images'], img_name)
+                    if not cv2.imwrite(img_path, img):
+                        raise IOError(f"Failed to write {img_path}")
+
+                    # Save annotations
+                    img_shape = img.shape
+                    for fmt, path in folders['annotations'].items():
+                        save_annotation_file(
+                            img_path,
+                            boxes,
+                            AnnotationFormat[fmt.upper()],
+                            path,
+                            img_shape
+                        )
+
+                    # Save visual
+                    save_visual_annotation_image(
+                        img_path,
+                        boxes,
+                        folders['visual'],
+                        self.canvas.class_colors
+                    )
+
+                    success_count += 1
+                except Exception as e:
+                    logging.error(f"Failed to save {name}: {str(e)}")
+                    continue
+
+            # 4. Verify output
+            if success_count > 0:
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Saved {success_count} augmentations to:\n{base_dir}"
+                )
+                # Open folder in file explorer
+                if sys.platform == "win32":
+                    os.startfile(base_dir)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", base_dir])
+                else:
+                    subprocess.run(["xdg-open", base_dir])
+            else:
+                QMessageBox.warning(self, "Error", "No augmentations were saved")
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Critical Error",
+                f"Could not create output structure:\n{str(e)}"
+            )
+            logging.critical(f"Augmentation save failed: {traceback.format_exc()}")
 
     def _setup_shortcuts(self):
         """Set up keyboard shortcuts."""
@@ -402,6 +667,7 @@ class AnnotatorMainWindow(QMainWindow):
             else:
                 self._update_status(f"Class '{new_class}' already exists")
 
+
     def _select_class_from_bin(self, item):
         """Select class from the class bin."""
         selected_label = item.text()
@@ -441,3 +707,30 @@ class AnnotatorMainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "No images found in COCO dataset directory")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load COCO dataset: {str(e)}")
+
+
+class AugmentationDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Image Augmentation")
+        layout = QVBoxLayout()
+
+        self.label = QLabel("How many augmented images would you like to generate per original image?")
+        layout.addWidget(self.label)
+
+        self.spin_box = QSpinBox()
+        self.spin_box.setRange(3, 15)
+        self.spin_box.setValue(5)
+        layout.addWidget(self.spin_box)
+
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+        self.setLayout(layout)
+
+    def get_augmentation_count(self):
+        return self.spin_box.value()
+
+
