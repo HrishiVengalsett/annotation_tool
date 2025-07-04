@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 import traceback
 
 # Configure logging
@@ -53,6 +53,17 @@ if __name__ == "__main__":
             window.canvas.clear_memory()
         sys.exit(ret)
 
+
+    except KeyboardInterrupt:
+
+        logging.info("Application gracefully stopped by user")
+
+        sys.exit(0)
+
     except Exception as e:
-        logging.critical(f"Startup failed: {traceback.format_exc()}")
-        raise
+
+        logging.critical(f"Fatal error: {traceback.format_exc()}")
+
+        QMessageBox.critical(None, "Error", f"Critical error occurred:\n{str(e)}")
+
+        sys.exit(1)
