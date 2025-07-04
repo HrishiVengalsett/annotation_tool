@@ -21,6 +21,7 @@ from PyQt5.QtCore import QTimer
 from annotation_io import save_annotation_file, AnnotationFormat, _generate_color_for_class
 from image_loader import load_image_folder, get_image_at_index
 from annotation_io import AnnotationImporter
+from annotation_io import save_visual_annotation_image
 
 
 class AnnotationCanvas(QLabel):
@@ -331,8 +332,6 @@ class AnnotationCanvas(QLabel):
         if cv_img.size == 0:  # Check for empty array
             logging.error("Empty image array in _convert_cv2_to_pixmap.")
             return QPixmap()
-        if cv_img.size == 0:
-            return QPixmap()
 
         if cv_img.ndim == 2:
             # Grayscale image
@@ -637,12 +636,11 @@ class AnnotationCanvas(QLabel):
                 self._update_status()
 
     def save_annotations(self) -> None:
-        """Save all annotations to disk with file dialog."""
-        if not self.image_paths:
-            QMessageBox.warning(self, "Error", "No images loaded to save annotations for")
+        """Save annotations for current image"""
+        if not self.image_paths or self.current_index < 0:
             return
 
-        # Prompt for save location if not set
+        # Use existing annotation folder or prompt
         if not self.annotation_folder:
             folder = QFileDialog.getExistingDirectory(
                 self, "Select Folder to Save Annotations")
@@ -651,41 +649,51 @@ class AnnotationCanvas(QLabel):
             self.annotation_folder = folder
 
         try:
-            coco_data = None
-            success_count = 0
+            # Create folder structure
+            folders = {
+                'annotations': os.path.join(self.annotation_folder, 'annotations'),
+                'yolo': os.path.join(self.annotation_folder, 'annotations', 'yolo'),
+                'custom': os.path.join(self.annotation_folder, 'annotations', 'custom'),
+                'visual': os.path.join(self.annotation_folder, 'visual_annotations')
+            }
+            for f in folders.values():
+                os.makedirs(f, exist_ok=True)
 
-            for img_path, boxes in self.annotations.items():
-                if not boxes:
-                    continue
+            img_path = self.image_paths[self.current_index]
+            img = cv2.imread(img_path)
+            if img is None:
+                return
 
-                try:
-                    img = cv2.imread(img_path)
-                    if img is None:
-                        logging.error(f"Failed to read image for annotation: {img_path}")
-                        continue
+            # Save in all formats
+            if self.annotation_format == AnnotationFormat.COCO:
+                # For single image COCO save, we still need to maintain structure
+                coco_data = {
+                    "images": [],
+                    "annotations": [],
+                    "categories": [],
+                    "info": {"description": "COCO dataset"},
+                    "licenses": [{"id": 1, "name": "Unknown"}]
+                }
+                save_annotation_file(
+                    img_path, self.current_boxes, self.annotation_format,
+                    folders['annotations'], img.shape, coco_data
+                )
+            else:
+                save_annotation_file(
+                    img_path, self.current_boxes, self.annotation_format,
+                    folders[self.annotation_format.name.lower()], img.shape
+                )
 
-                    if self.annotation_format == AnnotationFormat.COCO:
-                        coco_data = save_annotation_file(
-                            img_path, boxes, self.annotation_format,
-                            self.annotation_folder, img.shape, coco_data,
-                        )
-                    else:
-                        save_annotation_file(
-                            img_path, boxes, self.annotation_format,
-                            self.annotation_folder, img.shape,
+            # Always save visual annotation
+            save_visual_annotation_image(
+                img_path, self.current_boxes,
+                folders['visual'], self.class_colors
+            )
 
-                        )
-                    success_count += 1
-                except Exception as e:
-                    logging.error(f"Failed to save annotations for {img_path}: {e}")
-
-            msg = f"Successfully saved {success_count} annotations"
-            if success_count < len(self.annotations):
-                msg += f" (failed {len(self.annotations) - success_count})"
-            QMessageBox.information(self, "Save Complete", msg)
+            QMessageBox.information(self, "Saved", "Annotations saved successfully")
 
         except Exception as e:
-            QMessageBox.critical(self, "Save Error", f"Failed to save annotations: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle keyboard shortcuts."""
