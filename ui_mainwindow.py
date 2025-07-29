@@ -9,6 +9,8 @@ import cv2
 import psutil
 import traceback
 import logging
+from PyQt5.QtWidgets import QInputDialog
+from annotation_io import generate_3d_views_local
 
 from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QListWidget,
@@ -25,6 +27,86 @@ from annotation_canvas import AnnotationCanvas
 from annotation_io import AnnotationFormat, DatasetExporter, ImageAugmenter, save_annotation_file, \
     save_visual_annotation_image
 from image_loader import load_image_folder, add_image_to_list
+from PyQt5.QtWidgets import QInputDialog
+from annotation_io import generate_3d_views_local
+
+class GeneratedImageViewerDialog(QDialog):
+    """
+    A dialog window to display generated images in a grid, allowing the user
+    to select which ones to keep.
+    """
+    def __init__(self, image_paths, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Generated Views to Keep")
+        self.setMinimumSize(900, 700)
+
+        self.all_paths = image_paths
+        # By default, all images are selected
+        self.selected_paths = list(image_paths)
+
+        # Main layout
+        self.layout = QVBoxLayout(self)
+
+        # Scroll area for images
+        self.scroll_area = QScrollArea()
+        self.scroll_content = QWidget()
+        self.scroll_layout = QGridLayout(self.scroll_content)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.scroll_area.setWidgetResizable(True)
+        self.layout.addWidget(self.scroll_area)
+
+        # Add all images to the grid
+        self._populate_grid()
+
+        # OK and Cancel buttons
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.layout.addWidget(self.buttons)
+
+    def _populate_grid(self):
+        """Adds all image previews to the dialog's grid layout."""
+        row, col = 0, 0
+        for path in self.all_paths:
+            # Create a container for each image and its checkbox
+            frame = QFrame()
+            frame.setFrameShape(QFrame.StyledPanel)
+            layout = QVBoxLayout(frame)
+
+            # Create and display the image thumbnail
+            pixmap = QPixmap(path)
+            label = QLabel()
+            label.setPixmap(pixmap.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(label)
+
+            # Create the checkbox
+            checkbox = QCheckBox(os.path.basename(path))
+            checkbox.setChecked(True) # Checked by default
+            # Use a lambda to pass the path and state to the handler
+            checkbox.toggled.connect(lambda state, p=path: self._toggle_selection(p, state))
+            layout.addWidget(checkbox)
+
+            # Add the complete frame to the grid
+            self.scroll_layout.addWidget(frame, row, col)
+            col += 1
+            if col >= 3:  # 3 columns per row
+                col = 0
+                row += 1
+
+    def _toggle_selection(self, path, state):
+        """Adds or removes an image path from the list of selected paths."""
+        if state and path not in self.selected_paths:
+            self.selected_paths.append(path)
+        elif not state and path in self.selected_paths:
+            self.selected_paths.remove(path)
+
+    def get_selected_paths(self):
+        """Returns the list of paths for the images the user selected."""
+        return self.selected_paths
 
 
 class AugmentationPreviewDialog(QDialog):
@@ -238,6 +320,10 @@ class AnnotatorMainWindow(QMainWindow):
         augment_btn.clicked.connect(self._handle_augmentations)
         file_layout.addWidget(augment_btn)
 
+        self.generate_3d_btn = QPushButton("Generate 3D Views", self)
+        self.generate_3d_btn.clicked.connect(self._handle_3d_generation)
+        file_layout.addWidget(self.generate_3d_btn)
+
         file_group.setLayout(file_layout)
         left_layout.addWidget(file_group)
 
@@ -324,6 +410,93 @@ class AnnotatorMainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
             n = dialog.get_augmentation_count()
             self._generate_augmentations(n)
+
+    def _handle_3d_generation(self):
+        """
+        Handles the 3D view generation process using the Replicate API.
+        """
+        # Ask for the API Token once per session
+        if not hasattr(self, 'replicate_api_token'):
+            token, ok = QInputDialog.getText(self, "Replicate API Token",
+                                             "Please enter your Replicate API token:", QLineEdit.Normal)
+            if not ok or not token.strip():
+                QMessageBox.warning(self, "Token Required", "An API token is required to generate images.")
+                return
+            self.replicate_api_token = token.strip()
+
+        if self.canvas.current_index < 0:
+            QMessageBox.warning(self, "No Image Selected", "Please load and select an image first.")
+            return
+
+        num_views, ok = QInputDialog.getInt(self, "Generate 3D Views",
+                                            "Number of new angles to generate:", 10, 1, 20)
+        if not ok:
+            return
+
+        current_img_path = self.canvas.image_paths[self.canvas.current_index]
+
+        # This will still freeze the UI, but it will work. We will fix the freezing next.
+        self._update_status("Sending job to Replicate... This may take several minutes.")
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try:
+            # Call the reliable API function, passing the token
+            new_image_paths = generate_3d_views_local(
+                current_img_path,
+                num_views,
+                self.replicate_api_token
+            )
+
+            # Restore the cursor before showing any dialogs
+            QApplication.restoreOverrideCursor()
+
+            if not new_image_paths:
+                QMessageBox.warning(self, "Generation Failed",
+                                    "Could not generate new views. Check the log file for details.")
+                self._update_status("Ready")
+                return
+
+            # Show the selection dialog to the user
+            dialog = GeneratedImageViewerDialog(new_image_paths, self)
+
+            if dialog.exec_() == QDialog.Accepted:
+                selected_paths = dialog.get_selected_paths()
+
+                # Add only the selected images to the project
+                if selected_paths:
+                    for path in selected_paths:
+                        if self.canvas.add_image(path):
+                            self.image_list.addItem(os.path.basename(path))
+                    QMessageBox.information(self, "Success", f"Successfully added {len(selected_paths)} new views.")
+                else:
+                    self._update_status("No images were selected.")
+
+                # Clean up and delete the images that were not selected
+                for path in new_image_paths:
+                    if path not in selected_paths:
+                        try:
+                            os.remove(path)
+                            logging.info(f"Deleted unused generated image: {path}")
+                        except OSError as e:
+                            logging.error(f"Failed to delete unused image {path}: {e}")
+            else:
+                # If user cancels, delete all generated images
+                for path in new_image_paths:
+                    try:
+                        os.remove(path)
+                    except OSError as e:
+                        logging.error(f"Failed to delete unused image on cancel: {path}: {e}")
+                self._update_status("Generation canceled.")
+
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(self, "Error", f"An error occurred during 3D generation: {str(e)}")
+            logging.error(f"3D Generation failed: {traceback.format_exc()}")
+        finally:
+            # A final check to ensure the cursor is always restored
+            if QApplication.overrideCursor() is not None:
+                QApplication.restoreOverrideCursor()
+            self._update_status("Ready")
 
     def _generate_augmentations(self, n_per_image):
         """Generate augmented versions of all loaded images"""
