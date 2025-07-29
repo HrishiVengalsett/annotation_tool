@@ -1,5 +1,7 @@
 import os
 import json
+import traceback
+
 import cv2
 from enum import Enum
 from typing import List, Dict, Tuple, Optional
@@ -13,7 +15,9 @@ import random
 import numpy as np
 import sys
 import subprocess
-
+import requests
+import time
+import base64
 
 class ImageAugmenter:
     def __init__(self):
@@ -864,3 +868,92 @@ def save_annotation_file(
     return exporter.save_annotation_file(
         img_path, boxes, fmt, folder, img_shape, coco_data
     )
+
+
+def generate_3d_views_local(image_path: str, num_views: int, api_token: str, progress_callback=None) -> list[str]:
+    """
+    Generates new 2D images from different angles using the Replicate API.
+    This is much more reliable than running a local model.
+    """
+    if not api_token:
+        logging.error("Replicate API token is missing.")
+        # You could show a message box here if you want to be more user-friendly
+        return []
+
+    # Convert the input image to a base64 data URI
+    with open(image_path, "rb") as f:
+        data = base64.b64encode(f.read()).decode("utf-8")
+    image_uri = f"data:application/octet-stream;base64,{data}"
+
+    headers = {
+        "Authorization": f"Token {api_token}",
+        "Content-Type": "application/json",
+    }
+
+    new_image_paths = []
+    base_dir = os.path.dirname(image_path)
+    generated_dir = os.path.join(base_dir, "generated_3d_views")
+    os.makedirs(generated_dir, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(image_path))[0]
+
+    for i in range(num_views):
+        if progress_callback:
+            progress_callback.emit(f"Starting job for view {i + 1}/{num_views}...")
+
+        angle_degrees = (i + 1) * (360 / num_views)
+
+        # 1. Start the prediction job on Replicate's servers
+        body = {
+            "version": "c69c6559a29011b576f1ff0371b3bc1add2856480c60520c7e9ce0b40a6e9052",
+            "input": {
+                "image": image_uri,
+                "azi": angle_degrees,  # Azimuth angle for rotation
+            },
+        }
+        start_response = requests.post(
+            "https://api.replicate.com/v1/predictions",
+            headers=headers,
+            json=body,
+        )
+
+        if start_response.status_code != 201:
+            logging.error(f"Failed to start prediction: {start_response.text}")
+            continue
+
+        prediction_url = start_response.json()["urls"]["get"]
+
+        # 2. Poll for the result
+        while True:
+            if progress_callback:
+                progress_callback.emit(f"Processing view {i + 1}/{num_views} on server...")
+
+            get_response = requests.get(prediction_url, headers=headers)
+            status = get_response.json()["status"]
+
+            if status == "succeeded":
+                output_url = get_response.json()["output"][1]  # The second image is usually the new view
+                break
+            elif status == "failed":
+                logging.error("Prediction failed on the server.")
+                output_url = None
+                break
+
+            time.sleep(2)  # Wait 2 seconds before checking again
+
+        if not output_url:
+            continue
+
+        # 3. Download the generated image
+        if progress_callback:
+            progress_callback.emit(f"Downloading view {i + 1}/{num_views}...")
+
+        image_response = requests.get(output_url)
+        if image_response.status_code == 200:
+            new_filename = f"{base_name}_3d_view_{i + 1}.jpg"
+            new_filepath = os.path.join(generated_dir, new_filename)
+            with open(new_filepath, "wb") as f:
+                f.write(image_response.content)
+            new_image_paths.append(new_filepath)
+            logging.info(f"Successfully saved generated view: {new_filepath}")
+
+    return new_image_paths
